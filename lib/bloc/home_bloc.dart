@@ -1,51 +1,35 @@
 import 'dart:async';
+import 'package:bloc/bloc.dart';
+import 'package:button_count/counter_event.dart';
 
-import 'package:flutter/cupertino.dart';
-import 'package:bloc_pattern/bloc_pattern.dart';
-import 'package:flutter_app_test/model/icoded.dart';
-import 'package:flutter_app_test/repository/http/services/icoded_web_client.dart';
+class CounterBloc {
+  int counterV = 0;
 
-class IcodedBloc implements BlocBase {
-  final IcodedWebClient webClient;
+  final counterStateController = StreamController<int>();
+  StreamSink<int> get inCounter => counterStateController.sink;
 
-  List<Icoded> _apiIcoders = [];
+  Stream<int> get counter => counterStateController.stream;
 
-  IcodedBloc({@required this.webClient});
+  final counterEventController = StreamController<CounterEvent>();
+  StreamSink<CounterEvent> get counterEventSink => counterEventController.sink;
 
-  StreamController<List<Icoded>> _IcodersController =
-  StreamController<List<Icoded>>();
-
-  Stream<List<Icoded>> get outIcoders => _IcodersController.stream;
-
-  Sink<List<Icoded>> get inIcoders => _IcodersController.sink;
-
-  @override
-  void addListener(listener) {
-    _IcodersController.onListen = listener;
+  CounterBloc() {
+    counterEventController.stream.listen((mapEventToState));
   }
 
-  @override
-  void dispose() {
-    _IcodersController.close();
-  }
-
-  @override
-  bool get hasListeners => _IcodersController.hasListener;
-
-  @override
-  void notifyListeners() {}
-
-  @override
-  void removeListener(listener) {
-    if (_IcodersController.hasListener) {
-      _IcodersController.onCancel = listener;
+  void mapEventToState(CounterEvent event) {
+    if (event is IncrementEvent) {
+      counterV++;
+    } else {
+      counterV--;
     }
+
+
+    inCounter.add(counterV);
   }
 
-  void loadIcoders() async {
-    _apiIcoders = await webClient.getAllIcoders();
-    inIcoders.add(_apiIcoders);
+  void dispose() {
+    counterStateController.close();
+    counterEventController.close();
   }
-
-  bool _hasIcoders() => _apiIcoders != null && _apiIcoders.length > 0;
 }
